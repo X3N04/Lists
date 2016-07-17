@@ -143,6 +143,9 @@ public:
 	// printList's direction variables
 	static int Forward;
 	static int Reverse;
+	// Returns a newly constructed string object with its
+	// value initialized to a copy of a substring of this object.
+	LinkedList<ItemType> &subStr(int position, int len);
 };
 // Initialize Free List
 template<class ItemType>
@@ -186,7 +189,7 @@ void LinkedList<ItemType>::printRevHelper(Node<ItemType>* curPtr) const
 	if (curPtr != NULL)
 	{
 		printRevHelper(curPtr->getNext());
-		std::cout << curPtr->getPosition() << " : " << curPtr->getItem() << std::endl;
+		std::cout << curPtr->getItem() << std::endl;
 	}
 }
 // Link a removed Node to the Free List
@@ -300,23 +303,28 @@ template<class ItemType>
 void LinkedList<ItemType>::insert(const ItemType& newEntry)
 {
 	Node<ItemType>* newNode = getListEl();
-	Node<ItemType>* curPtr, *prevPtr;
+	//Node<ItemType>* curPtr, *prevPtr;
 	TraverseOK = false;
 	newNode->setItem(newEntry);
+	// Insert new node at beginning of chain
+	newNode->setNext(headPtr);
+	headPtr = newNode;
+	/* Insert in ascending order
 	for (curPtr = headPtr, prevPtr = nullptr;
-		curPtr != nullptr && curPtr->getItem() < newNode->getItem();
-		prevPtr = curPtr, curPtr = curPtr->getNext());
+	curPtr != nullptr && curPtr->getItem() < newNode->getItem();
+	prevPtr = curPtr, curPtr = curPtr->getNext());
 	if (prevPtr == nullptr)
 	{
-		newNode->setNext(headPtr);
-		headPtr = newNode;
+	newNode->setNext(headPtr);
+	headPtr = newNode;
 
 	}
 	else
 	{
-		newNode->setNext(curPtr);
-		prevPtr->setNext(newNode);
+	newNode->setNext(curPtr);
+	prevPtr->setNext(newNode);
 	}
+	*/
 	++itemCount;
 }
 // Inchworm down Linked List
@@ -385,12 +393,29 @@ void  LinkedList<ItemType>::printList(int direction) const
 	{
 		while (curPtr != NULL)
 		{
-			std::cout << curPtr->getItem() << std::endl;
+			std::cout << curPtr->getItem() << " ";
 			curPtr = curPtr->getNext();
 		}
 	}
 	else
 		printRevHelper(curPtr);
+}
+// Mimic of String's substr function
+// Creates a new List and copys thisList's items into newList's items
+template<class ItemType>
+LinkedList<ItemType>& LinkedList<ItemType>::subStr(int position, int len)
+{
+	LinkedList<ItemType> *newList = new LinkedList<ItemType>;
+	if (position == this->getLength() ||
+		(position >= 1) && (position <= itemCount))
+		return *newList;
+	Node<ItemType> *curPtr = getNodeAt(position);
+	for(int i = 0; i < len; ++i)
+	{
+		newList->insert(curPtr->getItem());
+		curPtr = curPtr->getNext();
+	}
+	return *newList;
 }
 #if 0 // #if 1 to compile as a standalone program, not a library
 int main()
@@ -466,4 +491,3 @@ int main()
 	return 0;
 }
 #endif
-
