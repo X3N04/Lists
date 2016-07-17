@@ -16,7 +16,7 @@ class ListInterface
 public:
 	virtual void setEntry(int position, const ItemType& newEntry) = 0;
 	virtual ItemType getEntry(int position) const = 0;
-	virtual void insert(const ItemType& newEntry) = 0;
+	virtual void insert(const int position, const ItemType& newEntry) = 0;
 	virtual bool remove(const ItemType & newEntry) = 0;
 	virtual bool isEmpty() const = 0;
 	virtual int getLength() const = 0;
@@ -109,11 +109,15 @@ private:
 	void printRevHelper(Node<ItemType>* curPtr) const;
 	// Links a removed Node to Free List for reuse
 	void freeListEl(Node<ItemType>* curPtr);
+	// Recursively make a substring
+	void substrHelper(Node<ItemType>* anEntry, LinkedList<ItemType>& aList, int len);
 public:
 	// Default constructor
 	LinkedList();
 	// List Copy Constructor
 	LinkedList(const LinkedList<ItemType>& aList);
+	// Assignment operator copys aList into thisList
+	LinkedList<ItemType>& operator=(const LinkedList<ItemType>& aList);
 	// Destructor
 	virtual ~LinkedList();
 	// Modify a specified Node's item
@@ -126,16 +130,20 @@ public:
 	bool isInList(const ItemType& anEntry);
 	// Iterates first or next Node
 	Node<ItemType>* traverse(bool first);
+	// Inserts a Node into the specified position of thisList
+	void insert(const int position, const ItemType& newEntry);
 	// Inserts a Node in ascending order
-	// Constructed with numbers in mind
-	// Will need to be modified if using char
-	void insert(const ItemType& newEntry);
+	void insertSorted(const ItemType& newEntry);
+	// Inserts Node at the beginning of List
+	void push(const ItemType& newEntry);
 	// Removes a Node and returns to Free List
-	// Constructed with numbers in mind
-	// Will need to modified if using char
 	bool remove(const ItemType & newEntry);
+	// Removes first Node and returns to Free List
+	bool pop();
 	// Checks if itemCount is 0
 	bool isEmpty() const;
+	// Increase/decrease the number of Nodes in thisList
+	void resize(int n, const ItemType& value);
 	// Removes all Nodes in the List
 	void clear(void);
 	// Displays all Node's item to stdout
@@ -189,7 +197,7 @@ void LinkedList<ItemType>::printRevHelper(Node<ItemType>* curPtr) const
 	if (curPtr != NULL)
 	{
 		printRevHelper(curPtr->getNext());
-		std::cout << curPtr->getItem() << std::endl;
+		std::cout << curPtr->getItem() << " ";
 	}
 }
 // Link a removed Node to the Free List
@@ -199,6 +207,16 @@ void LinkedList<ItemType>::freeListEl(Node<ItemType>* curPtr)
 	curPtr->setItem(NULL);
 	curPtr->setNext(free);
 	free = curPtr;
+}
+template<class ItemType>
+void LinkedList<ItemType>::substrHelper(Node<ItemType>* anEntry, LinkedList<ItemType>& aList, int len)
+{
+	if (len == 0) return;
+	else
+	{
+		substrHelper(anEntry->getNext(), aList, (len - 1));
+		aList.push(anEntry->getItem());
+	}
 }
 // Used with printList function
 template<class ItemType>
@@ -210,15 +228,31 @@ template<class ItemType>
 LinkedList<ItemType>::LinkedList() : headPtr(nullptr), itemCount(0)
 {
 }
-// Up to the user to not copy two ptr that point to same memory
+// Prevent from self assignment
 // If the thisList has Nodes, clear them
 // Iterate to end of aList, inserting Nodes into thisList based on aList's Nodes
 template<class ItemType>
 LinkedList<ItemType>::LinkedList(const LinkedList<ItemType>& aList)
 {
-	if (headPtr != nullptr) clear();
+	assert(this != &aList);
+	clear();
 	Node<ItemType> *curPtr = aList.headPtr;
-	while (curPtr != NULL)
+	while (curPtr != nullptr)
+	{
+		insert(curPtr->getItem());
+		curPtr = curPtr->getNext();
+	}
+}
+// Clears thisList
+// Copies all aList items into thisList
+template<class ItemType>
+inline LinkedList<ItemType>& LinkedList<ItemType>::operator=(const LinkedList<ItemType>& aList)
+{
+	assert(this != &aList);
+	TaverseOK = false;
+	clear();
+	Node<ItemType> *curPtr = aList.headPtr;
+	while (curPtr != nullptr)
 	{
 		insert(curPtr->getItem());
 		curPtr = curPtr->getNext();
@@ -291,6 +325,34 @@ Node<ItemType>* LinkedList<ItemType>::traverse(bool first)
 	}
 	return nullptr;
 }
+// Inchworm down the List
+// Initialized and inserts new Node
+template<class ItemType>
+inline void LinkedList<ItemType>::insert(const int position, const ItemType & newEntry)
+{
+	assert((position >= 1) && (position <= itemCount + 1));
+	Node<ItemType>* newNode = getListEl();
+	newNode->setItem(newEntry);
+	TraverseOK = false;
+	if (position == 1)
+	{//beginning
+		newNode->setNext(headPtr);
+		headPtr = newNode;
+	}
+	else if (position == itemCount + 1)
+	{//end
+		Node<ItemType> *curPtr = getNodeAt(itemCount);
+		newNode->setNext(nullptr);
+		curPtr->setNext(newNode);
+	}
+	else
+	{//middle
+		Node<ItemType>* prevPtr = getNodeAt(position - 1);
+		newNode->setNext(prevPtr->getNext());
+		prevPtr->setNext(newNode);
+	}
+	++itemCount;
+}
 // Gets a Node from Free List
 // Halt traversal
 // Initialize new Node's item to newEntry
@@ -300,30 +362,35 @@ Node<ItemType>* LinkedList<ItemType>::traverse(bool first)
 // If prevPtr is nullptr, Linked List is empty. Insert at head
 // Else insert between two Nodes or at end f Linked List
 template<class ItemType>
-void LinkedList<ItemType>::insert(const ItemType& newEntry)
+void LinkedList<ItemType>::insertSorted(const ItemType& newEntry)
 {
 	Node<ItemType>* newNode = getListEl();
-	//Node<ItemType>* curPtr, *prevPtr;
+	Node<ItemType>* curPtr, *prevPtr;
 	TraverseOK = false;
 	newNode->setItem(newEntry);
-	// Insert new node at beginning of chai
-	newNode->setNext(headPtr)
-		headPtr = newNode;
-	/* Insert in ascending order
 	for (curPtr = headPtr, prevPtr = nullptr;
-	curPtr != nullptr && curPtr->getItem() < newNode->getItem();
-	prevPtr = curPtr, curPtr = curPtr->getNext());
+		curPtr != nullptr && curPtr->getItem() < newNode->getItem();
+		prevPtr = curPtr, curPtr = curPtr->getNext());
 	if (prevPtr == nullptr)
 	{
-	newNode->setNext(headPtr);
-	headPtr = newNode;
+		newNode->setNext(headPtr);
+		headPtr = newNode;
 	}
 	else
 	{
-	newNode->setNext(curPtr);
-	prevPtr->setNext(newNode);
+		newNode->setNext(curPtr);
+		prevPtr->setNext(newNode);
 	}
-	*/
+	++itemCount;
+}
+template<class ItemType>
+inline void LinkedList<ItemType>::push(const ItemType & newEntry)
+{
+	Node<ItemType>* newNode = getListEl();
+	TraverseOK = false;
+	newNode->setItem(newEntry);
+	newNode->setNext(headPtr);
+	headPtr = newNode;
 	++itemCount;
 }
 // Inchworm down Linked List
@@ -353,11 +420,62 @@ bool LinkedList<ItemType>::remove(const ItemType& newEntry)
 	TraverseOK = false;
 	return true;
 }
+template<class ItemType>
+inline bool LinkedList<ItemType>::pop()
+{
+	if (headPtr == nullptr) return false;
+	Node<ItemType>* curPtr = headPtr;
+	headPtr = headPtr->getNext();
+	--itemCount;
+	freeListEl(curPtr);
+	TraverseOK = false;
+	return true;
+}
 // Check if Linked List has zero Nodes
 template<class ItemType>
 bool LinkedList<ItemType>::isEmpty() const
 {
 	return itemCount == 0;
+}
+// 
+template<class ItemType>
+inline void LinkedList<ItemType>::resize(int n, const ItemType& value)
+{
+	assert(n >= 0);
+	if (((itemCount == 0) && (!(n > itemCount))) ||
+		(n == itemCount)) return;
+	else if ((itemCount == 1) && (n == 0))
+	{
+		freeListEl(traverse(true));
+		headPtr = nullptr;
+	}
+	else if ((itemCount > 1) && (n == 0))
+		while (!isEmpty()) pop();
+	else
+	{
+		Node<ItemType> *curPtr;
+		if (n > itemCount)
+		{
+			
+			while (n != itemCount)
+			{
+				if (itemCount == 0) push(value);
+				else insert(itemCount + 1, value);
+			}
+		}
+		else
+		{
+			curPtr = getNodeAt(n);
+			Node<ItemType> *nextPtr = curPtr->getNext();
+			for (int i = 0; i < (itemCount - n) && nextPtr != nullptr; ++i)
+			{
+				curPtr->setNext(nextPtr->getNext());
+				freeListEl(nextPtr);
+				nextPtr = curPtr->getNext();
+			}
+		}
+	}
+	TraverseOK = false;
 }
 // Iterate down Linked List deleting Nodes
 // Zero out thisList
@@ -399,39 +517,39 @@ void  LinkedList<ItemType>::printList(int direction) const
 	else
 		printRevHelper(curPtr);
 }
-// Mimic of String's substr function
 // Creates a new List and copys thisList's items into newList's items
 template<class ItemType>
 LinkedList<ItemType>& LinkedList<ItemType>::subStr(int position, int len)
 {
+	assert((position >= 1) && (position <= itemCount));
 	LinkedList<ItemType> *newList = new LinkedList<ItemType>;
-	if (position == this->getLength() ||
-		((position >= 1) && (position <= itemCount)))
+	if (position == this->getLength())// ((position >= 1) && (position <= itemCount))
 		return *newList;
 	Node<ItemType> *curPtr = getNodeAt(position);
-	for (int i = 0; i < len; ++i)
-	{
-		newList->insert(curPtr->getItem());
-		curPtr = curPtr->getNext();
-	}
+	substrHelper(curPtr, *newList, len);
 	return *newList;
 }
 #if 0 // #if 1 to compile as a standalone program, not a library
 int main()
 {
-	int choice = 0, key;
+	int choice = 0, key, position;
 	Node<int> d, *e;
 	LinkedList<int> list;
-	while (choice != 8)
+	while (choice != 13)
 	{
-		std::cout << "\n\n1. add an element\n"
-			<< "2. see if an element exists\n"
-			<< "3. remove an element by key\n"
-			<< "4. print forward\n"
-			<< "5. print reverse\n"
-			<< "6. traverse (first)\n"
-			<< "7. traverse (next)\n"
-			<< "8. quit\n" << "\nEnter choice : "
+		std::cout << "\n\n1. push element\n"
+			<< "2. insert element at designated location\n"
+			<< "3. insert element in order\n"
+			<< "4. see if an element exists\n"
+			<< "5. remove an element by value\n"
+			<< "6. pop element\n"
+			<< "7. resize list\n"
+			<< "8. print forward\n"
+			<< "9. print reverse\n"
+			<< "10. traverse (first)\n"
+			<< "11. traverse (next)\n"
+			<< "12. create a substring\n"
+			<< "13. quit\n" << "\nEnter choice : "
 			<< std::flush;
 		std::cin >> choice;
 		switch (choice)
@@ -439,12 +557,25 @@ int main()
 		case 1:
 			std::cout << "Enter key : " << std::flush;
 			std::cin >> key;
-			d.setItem(key);
-			e = new Node<int>;
-			(*e) = d;
-			list.insert(e->getItem());
+			list.push(key);
 			break;
 		case 2:
+			std::cout << "Enter key : " << std::flush;
+			std::cin >> key;
+			std::cout << "\nEnter position : " << std::flush;
+			std::cin >> position;
+			std::cout << list.getLength() << std::endl;
+			if ((position < 1) || (position > (list.getLength() + 1)))
+				std::cout << "You can't insert a Node there\n";
+			else
+				list.insert(position, key);
+			break;
+		case 3:
+			std::cout << "Enter key : " << std::flush;
+			std::cin >> key;
+			list.insertSorted(key);
+			break;
+		case 4:
 			std::cout << "Enter key : " << std::flush;
 			std::cin >> key;
 			if (list.isInList(key))
@@ -452,7 +583,7 @@ int main()
 			else
 				std::cout << "Nah man, the key " << key << " isn't there\n";
 			break;
-		case 3:
+		case 5:
 			std::cout << "Enter key : " << std::flush;
 			std::cin >> key;
 			if (list.remove(key))
@@ -460,27 +591,47 @@ int main()
 			else
 				std::cout << "Failed to remove node" << std::endl;
 			break;
-		case 4:
+		case 6:
+			list.pop();
+			break;
+		case 7:
+			std::cout << "Enter new length : " << std::flush;
+			std::cin >> key;
+			list.resize(key, 0);
+			break;
+		case 8:
 			list.printList(list.Forward);
 			break;
-		case 5:
+		case 9:
 			list.printList(list.Reverse);
 			break;
-		case 6:
+		case 10:
 			e = list.traverse(true);
 			if (e == nullptr)
 				std::cout << "There is no first key!\n";
 			else
 				std::cout << "Node has data " << e->getItem() << std::endl;
 			break;
-		case 7:
+		case 11:
 			e = list.traverse(false);
 			if (e == nullptr)
 				std::cout << "There is no next key!\n";
 			else
 				std::cout << "Node has data " << e->getItem() << std::endl;
 			break;
-		case 8:
+		case 12:
+			std::cout << "Enter position : " << std::flush;
+			std::cin >> position;
+			std::cout << "Enter number of characters : " << std::flush;
+			std::cin >> key;
+			if (key > list.getLength() ||
+				position < 1 ||
+				position > list.getLength())
+				std::cout << "That goes out of range!\n" << std::endl;
+			else
+				(list.subStr(position, key)).printList(1);
+			break;
+		case 13:
 			std::cout << "Goodbye!" << std::endl;
 			break;
 		default:
@@ -490,4 +641,3 @@ int main()
 	return 0;
 }
 #endif
-
