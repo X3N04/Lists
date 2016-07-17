@@ -6,10 +6,6 @@
 * ItemType can be char, int, float, or double
 * Node<ItemType> is the List Element
 * LinkedList<ItemType> is the collection of Nodes
-* TODO: int findPosition(ItemType item);
-*       Add a position variable to Node;
-*       Modify insert to handle list with 1 node
-* 		 Modify insert and remove to use getNodeAt(findPosition(item))
 */
 #include <cassert>		// assert
 #include <iostream>		// cin, cout, endl, flush
