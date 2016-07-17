@@ -306,9 +306,9 @@ void LinkedList<ItemType>::insert(const ItemType& newEntry)
 	//Node<ItemType>* curPtr, *prevPtr;
 	TraverseOK = false;
 	newNode->setItem(newEntry);
-	// Insert new node at beginning of chain
-	newNode->setNext(headPtr);
-	headPtr = newNode;
+	// Insert new node at beginning of chai
+	newNode->setNext(headPtr)
+		headPtr = newNode;
 	/* Insert in ascending order
 	for (curPtr = headPtr, prevPtr = nullptr;
 	curPtr != nullptr && curPtr->getItem() < newNode->getItem();
@@ -317,7 +317,6 @@ void LinkedList<ItemType>::insert(const ItemType& newEntry)
 	{
 	newNode->setNext(headPtr);
 	headPtr = newNode;
-
 	}
 	else
 	{
@@ -407,10 +406,10 @@ LinkedList<ItemType>& LinkedList<ItemType>::subStr(int position, int len)
 {
 	LinkedList<ItemType> *newList = new LinkedList<ItemType>;
 	if (position == this->getLength() ||
-		(position >= 1) && (position <= itemCount))
+		((position >= 1) && (position <= itemCount)))
 		return *newList;
 	Node<ItemType> *curPtr = getNodeAt(position);
-	for(int i = 0; i < len; ++i)
+	for (int i = 0; i < len; ++i)
 	{
 		newList->insert(curPtr->getItem());
 		curPtr = curPtr->getNext();
@@ -491,3 +490,4 @@ int main()
 	return 0;
 }
 #endif
+
