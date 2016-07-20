@@ -59,7 +59,7 @@ Node<ItemType>::Node(const ItemType& anItem) : item(anItem), next(nullptr)
 // Copys nextNodePtr to this Node's next
 template<class ItemType>
 Node<ItemType>::Node(const ItemType& anItem, Node<ItemType>* nextNodePtr) :
-		item(anItem), next(nextNodePtr)
+	item(anItem), next(nextNodePtr)
 {
 }
 // Replaces this Node's item with anItem
@@ -117,13 +117,15 @@ private:
 	void setHeadPtr(Node<ItemType>* newList);
 	// Allows reverse to perform recursively
 	Node<ItemType>* reverseHelper(Node<ItemType>* anEntry);
+	// Appends rhs to lhs
+	void appendHelper(Node<ItemType> *lhs, Node<ItemType> *rhs);
 public:
 	// Default constructor
 	LinkedList();
 	// List Copy Constructor
 	LinkedList(const LinkedList<ItemType>& aList);
 	// Assignment operator copys aList into thisList
-	LinkedList<ItemType>& operator=(LinkedList<ItemType>& aList);
+	LinkedList<ItemType>& operator=(const LinkedList<ItemType>& aList);
 	// Destructor
 	virtual ~LinkedList();
 	// Modify a specified Node's item
@@ -139,7 +141,7 @@ public:
 	// Iterates first or next Node
 	Node<ItemType>* traverse(bool first);
 	// Inserts a Node into the specified position of thisList
-	void insert(const int position, const ItemType& newEntry);
+	void insert(int position, const ItemType& newEntry);
 	// Inserts a Node in ascending order
 	void insertSorted(const ItemType& newEntry);
 	// Inserts Node at the beginning of List
@@ -198,8 +200,7 @@ Node<ItemType>* LinkedList<ItemType>::getNodeAt(int position) const
 {
 	assert((position >= 1) && (position <= itemCount));
 	Node<ItemType>* curPtr = headPtr;
-	for (int skip = 1; skip < position; skip++)
-		curPtr = curPtr->getNext();
+	for (int skip = 1; skip < position; skip++, curPtr = curPtr->getNext());
 	return curPtr;
 }
 // Print all Node items in descending order by way of recursion
@@ -247,29 +248,41 @@ LinkedList<ItemType>::LinkedList() : headPtr(nullptr), itemCount(0)
 template<class ItemType>
 LinkedList<ItemType>::LinkedList(const LinkedList<ItemType>& aList)
 {
-	//TODO: clean this up
 	assert(this != &aList);
+	TaverseOK = false;
 	clear();
-	Node<ItemType> *curPtr = aList.headPtr;
-	while (curPtr != nullptr)
+	Node<ItemType> *lhs = headPtr;
+	Node<ItemType> *rhs;
+	for (rhs = aList.headPtr;
+		rhs != nullptr;
+		rhs = rhs->getNext(), lhs = lhs->getNext())
 	{
-		insert(curPtr->getItem());
-		curPtr = curPtr->getNext();
+		Node<ItemType> *newNode = getListEl();
+		newNode->setItem(rhs->getItem());
+		newNode->setNext(nullptr);
+		lhs->setNext(newNode);
+		++itemCount;
 	}
 }
 // Clears thisList
 // Copies all aList items into thisList
 template<class ItemType>
-inline LinkedList<ItemType>& LinkedList<ItemType>::operator=(LinkedList<ItemType>& aList)
+inline LinkedList<ItemType>& LinkedList<ItemType>::operator=(const LinkedList<ItemType>& aList)
 {
 	assert(this != &aList);
 	TaverseOK = false;
 	clear();
-	Node<ItemType> *curPtr = aList.getHeadPtr();
-	while (curPtr != nullptr)
+	Node<ItemType> *lhs = headPtr;
+	Node<ItemType> *rhs;
+	for (rhs = aList.headPtr;
+		rhs != nullptr;
+		rhs = rhs->getNext(), lhs = lhs->getNext())
 	{
-		insert(curPtr->getItem());
-		curPtr = curPtr->getNext();
+		Node<ItemType> *newNode = getListEl();
+		newNode->setItem(rhs->getItem());
+		newNode->setNext(nullptr);
+		lhs->setNext(newNode);
+		++itemCount;
 	}
 }
 // Destructor just uses clear
@@ -292,7 +305,7 @@ Node<ItemType>* LinkedList<ItemType>::reverseHelper(Node<ItemType>* anEntry)
 		Node<ItemType>* ptr = reverseHelper(anEntry->getNext());
 		if (ptr == nullptr)
 		{
-			setHeadPtr(anEntry);
+			headPtr = anEntry;
 			return anEntry;
 		}
 		else
@@ -303,6 +316,21 @@ Node<ItemType>* LinkedList<ItemType>::reverseHelper(Node<ItemType>* anEntry)
 		}
 	}
 	return nullptr;
+}
+template<class ItemType>
+void LinkedList<ItemType>::appendHelper(Node<ItemType>* lhs, Node<ItemType>* rhs)
+{
+	TraverseOK = false;
+	if (lhs == nullptr)
+		lhs = rhs;
+	else
+	{
+		Node<ItemType> *curPtr = rhs;
+		while (curPtr->getNext() != nullptr)
+			curPtr = curPtr->getNext();
+		curPtr->setNext(rhs);
+	}
+	rhs = nullptr;
 }
 // Up to the user to enter a legal poision
 // Modifies specified Node's item
@@ -317,7 +345,8 @@ void LinkedList<ItemType>::setEntry(int position, const ItemType & newEntry)
 template<class ItemType>
 void LinkedList<ItemType>::setLength(int n)
 {
-	itemCount += n;
+	assert(n >= 0);
+	itemCount = n;
 }
 // Up to the user to enter a legal poision
 // Returns the specified Node's item
@@ -379,32 +408,23 @@ Node<ItemType>* LinkedList<ItemType>::traverse(bool first)
 // Inchworm down the List
 // Initialized and inserts new Node
 template<class ItemType>
-inline void LinkedList<ItemType>::insert(const int position, const ItemType & newEntry)
+inline void LinkedList<ItemType>::insert(int position, const ItemType & newEntry)
 {
-	//TODO: clean this up
 	assert((position >= 1) && (position <= itemCount + 1));
 	Node<ItemType>* newNode = getListEl();
 	newNode->setItem(newEntry);
-	TraverseOK = false;
 	if (position == 1)
 	{
-		//beginning
 		newNode->setNext(headPtr);
 		headPtr = newNode;
 	}
-	else if (position == itemCount + 1)
-	{
-		//end
-		Node<ItemType> *curPtr = getNodeAt(itemCount);
-		newNode->setNext(nullptr);
-		curPtr->setNext(newNode);
-	}
 	else
 	{
-		//middle
-		Node<ItemType>* prevPtr = getNodeAt(position - 1);
-		newNode->setNext(prevPtr->getNext());
-		prevPtr->setNext(newNode);
+		Node<ItemType> *curPtr = headPtr;
+		for (int i = 2; i != position; ++i, curPtr = traverse(false));
+		TraverseOK = false;
+		newNode->setNext(curPtr->getNext());
+		curPtr->setNext(newNode);
 	}
 	++itemCount;
 }
@@ -422,14 +442,14 @@ void LinkedList<ItemType>::insertSorted(const ItemType& newEntry)
 	Node<ItemType>* newNode = getListEl();
 	Node<ItemType>* curPtr, *prevPtr;
 	newNode->setItem(newEntry);
-	for (curPtr = traverse(true), prevPtr = nullptr;
-	        curPtr != nullptr && curPtr->getItem() < newNode->getItem();
-	        prevPtr = curPtr, curPtr = traverse(false));
+	for (curPtr = headPtr, prevPtr = nullptr;
+		curPtr != nullptr && curPtr->getItem() < newNode->getItem();
+		prevPtr = curPtr, curPtr = traverse(false));
 	TraverseOK = false;
 	if (prevPtr == nullptr)
 	{
-		newNode->setNext(getHeadPtr());
-		setHeadPtr(newNode);
+		newNode->setNext(headPtr);
+		headPtr = newNode;
 	}
 	else
 	{
@@ -545,6 +565,7 @@ template<class ItemType>
 void LinkedList<ItemType>::clear()
 {
 	Node<ItemType>* curPtr = headPtr, *prevPtr;
+	TraverseOK = false;
 	while (curPtr != nullptr)
 	{
 		prevPtr = curPtr;
@@ -582,44 +603,44 @@ template<class ItemType>
 LinkedList<ItemType>& LinkedList<ItemType>::subStr(int position, int len)
 {
 	assert((position >= 1) && (position <= itemCount));
+	TraverseOK = false;
 	LinkedList<ItemType> *newList = new LinkedList<ItemType>;
-	if (position == this->getLength())
+	if (position == itemCount)
 		return *newList;
 	Node<ItemType> *curPtr = getNodeAt(position);
 	substrHelper(curPtr, *newList, len);
 	return *newList;
 }
 // Appends thisList to aList
+//sets aList headPtr to null
 template<class ItemType>
 void LinkedList<ItemType>::append(LinkedList<ItemType>& aList)
 {
-	if (aList.isEmpty()) return;
-	else if (getLength() == 0)
+	TraverseOK = false;
+	if (headPtr == nullptr)
 	{
-		setHeadPtr(aList.getHeadPtr());
-		aList.setHeadPtr(nullptr);
+		headPtr = aList.headPtr;
+		if (aList.headPtr != nullptr)
+			itemCount = aList.itemCount;
 	}
 	else
 	{
-		Node<ItemType> *tail;
-		for (tail = traverse(true); tail->getNext() != nullptr; tail = traverse(false));
-		Node<ItemType> *head = aList.traverse(true);
-		tail->setNext(head);
-		TraverseOK = false;
-		while (tail != nullptr)
-		{
-			tail = tail->getNext();
-			setLength(getLength() + 1);
-		}
-		aList.setHeadPtr(nullptr);
+		Node<ItemType> *curPtr = headPtr;
+		while (curPtr->getNext() != nullptr)
+			curPtr = curPtr->getNext();
+		curPtr->setNext(aList.headPtr);
+		if (aList.headPtr != nullptr)
+			itemCount += aList.itemCount;
 	}
-	return;
+	aList.headPtr = nullptr;
+	aList.itemCount = 0;
 }
-//
+// Recursively reverses thisList
 template<class ItemType>
 void LinkedList<ItemType>::reverse(void)
 {
-	reverseHelper(getHeadPtr());
+	TraverseOK = false;
+	reverseHelper(headPtr);
 }
 #if 0 // #if 1 to compile as a standalone program, not a library
 int main()
@@ -634,21 +655,21 @@ int main()
 	while (choice != 15)
 	{
 		std::cout << "\n\n1. push element\n"
-		<< "2. insert element at designated location\n"
-		<< "3. insert element in order\n"
-		<< "4. see if an element exists\n"
-		<< "5. remove an element by value\n"
-		<< "6. pop element\n"
-		<< "7. resize list\n"
-		<< "8. print forward\n"
-		<< "9. print reverse\n"
-		<< "10. traverse (first)\n"
-		<< "11. traverse (next)\n"
-		<< "12. create a substring\n"
-		<< "13. append [1,2,3]\n"
-		<< "14. reverse list\n"
-		<< "15. quit\n" << "\nEnter choice : "
-		<< std::flush;
+			<< "2. insert element at designated location\n"
+			<< "3. insert element in order\n"
+			<< "4. see if an element exists\n"
+			<< "5. remove an element by value\n"
+			<< "6. pop element\n"
+			<< "7. resize list\n"
+			<< "8. print forward\n"
+			<< "9. print reverse\n"
+			<< "10. traverse (first)\n"
+			<< "11. traverse (next)\n"
+			<< "12. create a substring\n"
+			<< "13. append [1,2,3]\n"
+			<< "14. reverse list\n"
+			<< "15. quit\n" << "\nEnter choice : "
+			<< std::flush;
 		std::cin >> choice;
 		switch (choice)
 		{
@@ -663,7 +684,7 @@ int main()
 			std::cout << "\nEnter position : " << std::flush;
 			std::cin >> position;
 			std::cout << list.getLength() << std::endl;
-			if ((position < 1) || (position > (list.getLength() + 1)))
+			if ((position < 1) || (position >(list.getLength() + 1)))
 				std::cout << "You can't insert a Node there\n";
 			else
 				list.insert(position, key);
@@ -699,9 +720,11 @@ int main()
 			break;
 		case 8:
 			list.printList(list.Forward);
+			std::cout << " : " << list.getLength() << std::endl;
 			break;
 		case 9:
 			list.printList(list.Reverse);
+			std::cout << " : " << list.getLength() << std::endl;
 			break;
 		case 10:
 			e = list.traverse(true);
@@ -723,8 +746,8 @@ int main()
 			std::cout << "Enter number of characters : " << std::flush;
 			std::cin >> key;
 			if (key > list.getLength() ||
-			        position < 1 ||
-			        position > list.getLength())
+				position < 1 ||
+				position > list.getLength())
 				std::cout << "That goes out of range!\n" << std::endl;
 			else
 				(list.subStr(position, key)).printList(1);
