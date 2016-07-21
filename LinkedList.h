@@ -59,7 +59,7 @@ Node<ItemType>::Node(const ItemType& anItem) : item(anItem), next(nullptr)
 // Copies nextNodePtr to this Node's next
 template<class ItemType>
 Node<ItemType>::Node(const ItemType& anItem, Node<ItemType>* nextNodePtr) :
-		item(anItem), next(nextNodePtr)
+	item(anItem), next(nextNodePtr)
 {
 }
 // Replaces this Node's item with anItem
@@ -468,8 +468,8 @@ void LinkedList<ItemType>::insertSorted(const ItemType& newEntry)
 		TraverseOK = false;
 		newNode->setItem(newEntry);
 		for (curPtr = headPtr, prevPtr = nullptr;
-		        curPtr != nullptr && curPtr->getItem() < newNode->getItem();
-		        prevPtr = curPtr, curPtr = curPtr->getNext());
+			curPtr != nullptr && curPtr->getItem() < newNode->getItem();
+			prevPtr = curPtr, curPtr = curPtr->getNext());
 		if (prevPtr == nullptr)
 		{
 			newNode->setNext(headPtr);
@@ -547,7 +547,7 @@ bool LinkedList<ItemType>::isEmpty() const
 // If increasing, push/insert Nodes into thisList
 // If decreasing,
 template<class ItemType>
-LinkedList<ItemType> &LinkedList<ItemType>::resize(int len, const ItemType& value)
+void LinkedList<ItemType>::resize(int len, const ItemType& value)
 {
 	assert(len >= 0);
 	if (len == itemCount) return *this;
@@ -706,22 +706,22 @@ int main()
 	while (choice != 16)
 	{
 		std::cout << "\n\n1. push element\n"
-		<< "2. insert element at designated location\n"
-		<< "3. insert element in order\n"
-		<< "4. see if an element exists\n"
-		<< "5. remove an element by value\n"
-		<< "6. pop element\n"
-		<< "7. resize list\n"
-		<< "8. print forward\n"
-		<< "9. print reverse\n"
-		<< "10. traverse (first)\n"
-		<< "11. traverse (next)\n"
-		<< "12. create a substring\n"
-		<< "13. append [1,2,3]\n"
-		<< "14. reverse list\n"
-		<< "15. assign to list\n"
-		<< "16. quit\n" << "\nEnter choice : "
-		<< std::flush;
+			<< "2. insert element at designated location\n"
+			<< "3. insert element in order\n"
+			<< "4. see if an element exists\n"
+			<< "5. remove an element by value\n"
+			<< "6. pop element\n"
+			<< "7. resize list\n"
+			<< "8. print forward\n"
+			<< "9. print reverse\n"
+			<< "10. traverse (first)\n"
+			<< "11. traverse (next)\n"
+			<< "12. create a substring\n"
+			<< "13. append [1,2,3]\n"
+			<< "14. reverse list\n"
+			<< "15. assign to list\n"
+			<< "16. quit\n" << "\nEnter choice : "
+			<< std::flush;
 		std::cin >> choice;
 		switch (choice)
 		{
@@ -797,8 +797,8 @@ int main()
 			std::cout << "Enter number of characters : " << std::flush;
 			std::cin >> key;
 			if (key > list.getLength() ||
-			        position < 1 ||
-			        position > list.getLength())
+				position < 1 ||
+				position > list.getLength())
 				std::cout << "That goes out of range!\n" << std::endl;
 			else
 				(list.subStr(position, key)).printList(1);
