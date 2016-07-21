@@ -30,7 +30,7 @@ private:
 	ItemType item;
 	Node<ItemType>* next;
 public:
-	// Default Contructor
+	// Default Constructor
 	Node();
 	// item Copy Constructor
 	Node(const ItemType& anItem);
@@ -50,13 +50,13 @@ template<class ItemType>
 Node<ItemType>::Node() : next(nullptr)
 {
 }
-// Copys anItem to this Node's item
+// Copies anItem to this Node's item
 template<class ItemType>
 Node<ItemType>::Node(const ItemType& anItem) : item(anItem), next(nullptr)
 {
 }
-// Copys anItem to this Node's item
-// Copys nextNodePtr to this Node's next
+// Copies anItem to this Node's item
+// Copies nextNodePtr to this Node's next
 template<class ItemType>
 Node<ItemType>::Node(const ItemType& anItem, Node<ItemType>* nextNodePtr) :
 		item(anItem), next(nextNodePtr)
@@ -80,7 +80,7 @@ ItemType Node<ItemType>::getItem() const
 {
 	return item;
 }
-// Assistes List with access to next
+// Assists List with access to next
 template<class ItemType>
 Node<ItemType>* Node<ItemType>::getNext() const
 {
@@ -124,7 +124,7 @@ public:
 	LinkedList();
 	// List Copy Constructor
 	LinkedList(const LinkedList<ItemType>& aList);
-	// Assignment operator copys aList into thisList
+	// Assignment operator copies aList into thisList
 	LinkedList<ItemType>& operator=(const LinkedList<ItemType>& aList);
 	// Destructor
 	virtual ~LinkedList();
@@ -165,9 +165,9 @@ public:
 	// value initialized to a copy of a substring of this object.
 	LinkedList<ItemType> &subStr(int position, int len);
 	// Appends aList to the end of thisList
-	void append(LinkedList<ItemType>& aList);
+	LinkedList<ItemType> &append(LinkedList<ItemType>& aList);
 	// Reverses in place
-	void reverse(void);
+	LinkedList<ItemType> &reverse(void);
 	// Empties a list's contents
 	void deleteList(void);
 };
@@ -193,7 +193,7 @@ Node<ItemType>* LinkedList<ItemType>::getListEl(void)
 	curPtr->setNext(nullptr);
 	return curPtr;
 }
-// Up to the user to enter a legal poition
+// Up to the user to enter a legal position
 // Set curPtr to head of List
 // Skip down the List to the specified position
 // return a ptr to the specified Node
@@ -252,19 +252,27 @@ template<class ItemType>
 LinkedList<ItemType>::LinkedList(const LinkedList<ItemType>& aList)
 {
 	assert(this != &aList);
-	TaverseOK = false;
-	clear();
-	Node<ItemType> *lhs = headPtr;
-	Node<ItemType> *rhs;
-	for (rhs = aList.headPtr;
-	        rhs != nullptr;
-	        rhs = rhs->getNext(), lhs = lhs->getNext())
+	TraverseOK = false;
+	deleteList();
+	Node<ItemType> *lhs = nullptr;
+	Node<ItemType> *rhs = aList.headPtr;
+	while (rhs != nullptr)
 	{
-		Node<ItemType> *newNode = getListEl();
-		newNode->setItem(rhs->getItem());
-		newNode->setNext(nullptr);
-		lhs->setNext(newNode);
-		++itemCount;
+		if (lhs == nullptr)
+		{
+			push(rhs->getItem());
+			lhs = headPtr;
+		}
+		else
+		{
+			Node<ItemType> *newNode = getListEl();
+			newNode->setItem(rhs->getItem());
+			newNode->setNext(nullptr);
+			lhs->setNext(newNode);
+			lhs = lhs->getNext();
+			++itemCount;
+		}
+		rhs = rhs->getNext();
 	}
 }
 // Clears thisList
@@ -344,7 +352,7 @@ void LinkedList<ItemType>::appendHelper(Node<ItemType>* lhs, Node<ItemType>* rhs
 	}
 	rhs = nullptr;
 }
-// Up to the user to enter a legal poision
+// Up to the user to enter a legal position
 // Modifies specified Node's item
 template<class ItemType>
 void LinkedList<ItemType>::setEntry(int position, const ItemType & newEntry)
@@ -360,7 +368,7 @@ void LinkedList<ItemType>::setLength(int n)
 	assert(n >= 0);
 	itemCount = n;
 }
-// Up to the user to enter a legal poision
+// Up to the user to enter a legal position
 // Returns the specified Node's item
 template<class ItemType>
 ItemType LinkedList<ItemType>::getEntry(int position) const
@@ -455,19 +463,22 @@ void LinkedList<ItemType>::insertSorted(const ItemType& newEntry)
 	if (headPtr == nullptr) push(newEntry);
 	else
 	{
-		Node<ItemType> *curPtr, *newNode = getListEl();
-		newNode->setItem(newEntry);
-		newNode->setNext(nullptr);
-		for (curPtr = traverse(true);
-		        curPtr->getNext() != nullptr && curPtr->getItem() < newEntry;
-		        curPtr = traverse(false));
+		Node<ItemType> *newNode = getListEl();
+		Node<ItemType> *curPtr, *prevPtr;
 		TraverseOK = false;
-		if (curPtr->getNext() == nullptr)
-			curPtr->setNext(newNode);
+		newNode->setItem(newEntry);
+		for (curPtr = headPtr, prevPtr = nullptr;
+		        curPtr != nullptr && curPtr->getItem() < newNode->getItem();
+		        prevPtr = curPtr, curPtr = curPtr->getNext());
+		if (prevPtr == nullptr)
+		{
+			newNode->setNext(headPtr);
+			headPtr = newNode;
+		}
 		else
 		{
-			newNode->setNext(curPtr->getNext()->getNext());
-			curPtr->setNext(newNode);
+			newNode->setNext(curPtr);
+			prevPtr->setNext(newNode);
 		}
 		++itemCount;
 	}
@@ -536,10 +547,10 @@ bool LinkedList<ItemType>::isEmpty() const
 // If increasing, push/insert Nodes into thisList
 // If decreasing,
 template<class ItemType>
-inline void LinkedList<ItemType>::resize(int len, const ItemType& value)
+LinkedList<ItemType> &LinkedList<ItemType>::resize(int len, const ItemType& value)
 {
 	assert(len >= 0);
-	if (len == itemCount) return;
+	if (len == itemCount) return *this;
 	else if ((itemCount >= 1) && (len == 0))
 		while (!isEmpty()) pop();
 	else
@@ -570,6 +581,7 @@ inline void LinkedList<ItemType>::resize(int len, const ItemType& value)
 			itemCount += ((remove) ? (-1) : (1));
 		}
 	}
+	return *this;
 }
 // Iterate down Linked List deleting Nodes
 // Zero out thisList
@@ -612,7 +624,7 @@ void  LinkedList<ItemType>::printList(int direction) const
 	else
 		printRevHelper(curPtr);
 }
-// Creates a new List and copys thisList's items into newList's items
+// Creates a new List and copies thisList's items into newList's items
 template<class ItemType>
 LinkedList<ItemType>& LinkedList<ItemType>::subStr(int position, int len)
 {
@@ -628,25 +640,47 @@ LinkedList<ItemType>& LinkedList<ItemType>::subStr(int position, int len)
 // Appends thisList to aList
 //sets aList headPtr to null
 template<class ItemType>
-void LinkedList<ItemType>::append(LinkedList<ItemType>& aList)
+LinkedList<ItemType> &LinkedList<ItemType>::append(LinkedList<ItemType>& aList)
 {
-	//TODO: Fix this: The nodes get overwritten after appended
-	if (aList.headPtr == nullptr) return;
+	if (aList.headPtr == nullptr) return *this;
 	TraverseOK = false;
+	// find node to start insert
+	Node<ItemType> *curPtr;
 	if (headPtr == nullptr)
-		headPtr = aList.headPtr;
+		curPtr = headPtr;
 	else
-		getNodeAt(itemCount)->setNext(aList.headPtr);
-	itemCount = ((itemCount == 0) ? (aList.itemCount) : (itemCount + aList.itemCount));;
+		curPtr = getNodeAt(itemCount);
+	// deep copy from aList
+	Node<ItemType> *cpy = aList.headPtr;
+	while (cpy != nullptr)
+	{
+		Node<ItemType> *newNode = getListEl();
+		newNode->setItem(cpy->getItem());
+		newNode->setNext(nullptr);
+		if (headPtr == nullptr)
+		{
+			headPtr = newNode;
+			curPtr = headPtr;
+		}
+		else
+		{
+			curPtr->setNext(newNode);
+			curPtr = curPtr->getNext();
+		}
+		cpy = cpy->getNext();
+		++itemCount;
+	}
 	aList.headPtr = nullptr;
 	aList.itemCount = 0;
+	return *this;
 }
 // Recursively reverses thisList
 template<class ItemType>
-void LinkedList<ItemType>::reverse(void)
+LinkedList<ItemType> &LinkedList<ItemType>::reverse(void)
 {
 	TraverseOK = false;
 	reverseHelper(headPtr);
+	return *this;
 }
 template<class ItemType>
 void LinkedList<ItemType>::deleteList(void)
