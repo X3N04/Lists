@@ -45,6 +45,9 @@ public:
 	BigInt &operator*=(BigInt &rhs);
 	// Returns the 9s compliment of thisBigInt
 	BigInt &operator-(BigInt &rhs);
+	// Assigns the difference of thisBigInt and
+	// rhs to thisBigInt
+	BigInt &operator-=(BigInt &rhs);
 	// Adds one to thisBigInt
 	BigInt &operator++();
 	// Subtracts one from thisBigInt
@@ -120,14 +123,14 @@ int BigInt::getSize()
 // taking the sum of both digits and
 // pushing it into newNumber and return
 /*
- * Example: 246 + 135
- * a = 642
- * b = 531
- * c = 1
- * c = 81
- * c = 381
- * return 183
- */
+* Example: 246 + 135
+* a = 642
+* b = 531
+* c = 1
+* c = 81
+* c = 381
+* return 183
+*/
 BigInt &BigInt::operator+(BigInt &rhs)
 {
 	BigInt *newNumber;
@@ -173,17 +176,17 @@ BigInt & BigInt::operator+=(BigInt & rhs)
 }
 // Performs multiplication using this method:
 /*
- * multiply(a[1..p], b[1..q], base)
- * product = [1..p+q]
- * for b_i = 1 to q
- *    carry = 0
- *    for a_i = 1 to p
- *       product[a_i + b_i - 1] += carry + a[a_i] * b[b_i]
- *       carry = product[a_i + b_i - 1] / base
- *       product[a_i + b_i - 1] = product[a_i + b_i - 1] mod base
- *    product[b_i + p] += carry
- * end for
- */
+* multiply(a[1..p], b[1..q], base)
+* product = [1..p+q]
+* for b_i = 1 to q
+*    carry = 0
+*    for a_i = 1 to p
+*       product[a_i + b_i - 1] += carry + a[a_i] * b[b_i]
+*       carry = product[a_i + b_i - 1] / base
+*       product[a_i + b_i - 1] = product[a_i + b_i - 1] mod base
+*    product[b_i + p] += carry
+* end for
+*/
 // Then it reverses the number and removes any excess
 // zeros that were added during allocation portion
 // finally reversing it for further use and returning
@@ -196,17 +199,17 @@ BigInt &BigInt::operator*(BigInt &rhs)
 	unsigned long long carry;
 	int i, j;
 	for (i = 1, b_i = rhs.number.traverse(true);
-	        b_i != nullptr;
-	        ++i, b_i = rhs.number.traverse(false))
+		b_i != nullptr;
+		++i, b_i = rhs.number.traverse(false))
 	{
 		carry = 0;
 		for (j = 1, a_i = number.traverse(true);
-		        a_i != nullptr;
-		        ++j, a_i = number.traverse(false))
+			a_i != nullptr;
+			++j, a_i = number.traverse(false))
 		{
 			productPtr = product->number.getNodeAt(i + j - 1);
 			productPtr->setItem(productPtr->getItem() + \
-			                    carry + a_i->getItem() * b_i->getItem());
+				carry + a_i->getItem() * b_i->getItem());
 			carry = productPtr->getItem() / 10;
 			productPtr->setItem(productPtr->getItem() % 10);
 			productPtr = productPtr->getNext();
@@ -263,16 +266,16 @@ unsigned long long BigInt::complement(unsigned long long num)
 // for use in subtraction
 // Example rhs = 246 (represented as 642)
 /*
- * newNumber = 0
- * newNumber = empty
- * j = 6
- * newNumber = 3
- * j = 4
- * newNumber = 53
- * j = 2
- * newNumber = 753
- * j = nullptr
- */
+* newNumber = 0
+* newNumber = empty
+* j = 6
+* newNumber = 3
+* j = 4
+* newNumber = 53
+* j = 2
+* newNumber = 753
+* j = nullptr
+*/
 // If there are any 0s at the front, then remove them
 BigInt &BigInt::opposite(BigInt &rhs)
 {
@@ -300,10 +303,17 @@ BigInt &BigInt::operator-(BigInt &rhs)
 	if (*this < rhs)
 		return *newNumber;
 	BigInt temp = opposite(*this);
-	*newNumber  = temp + rhs;
+	*newNumber = temp + rhs;
 	*newNumber = opposite(*newNumber);
 	newNumber->number.reverse();
 	return *newNumber;
+}
+// Assigns the difference of thisBigInt
+// and rhs to thisBigInt
+BigInt &BigInt::operator-=(BigInt & rhs)
+{
+	*this = *this - rhs;
+	return *this;
 }
 // Prefix increment operator
 BigInt &BigInt::operator++()
@@ -354,7 +364,9 @@ bool BigInt::operator<(BigInt &rhs)
 	return false;
 }
 #if 0 // #if 1 to compile as a standalone program, not a library
-void fact(int n)
+#include <stdlib.h>     /* srand, rand */
+#include <time.h>
+void factorial(int n)
 {
 	if (n > 100)
 	{
@@ -369,8 +381,8 @@ void fact(int n)
 		BigInt temp(i);
 		fact *= temp;
 		arr[i - 1] = fact;
-		len = fact.getSize();
 	}
+	len = arr[n - 1].getSize();
 	for (int j = 0; j < n; ++j)
 	{
 		pw = len - arr[j].getSize();
@@ -401,8 +413,8 @@ void fib(int n)
 		b2 = b1;
 		b1 = t;
 		arr[i] = t;
-		len = t.getSize();
 	}
+	len = arr[n - 1].getSize();
 	for (int j = 0; j < n; ++j)
 	{
 		pw = len - arr[j].getSize();
@@ -414,29 +426,51 @@ void fib(int n)
 	}
 	return;
 }
+void randomNumbers(int n)
+{
+	if (n < 1) n = 2;
+	srand(time(NULL));
+	for (int i = 0; i < n; ++i)
+	{
+		BigInt a(rand() % (10 * n));
+		BigInt b(rand() % (10 * n));
+		std::cout << a << " - " << b << " = ";
+		std::cout << (a - b) << std::endl;
+		std::cout << a << " + " << b << " = ";
+		std::cout << (a + b) << std::endl;
+		std::cout << a << " * " << b << " = ";
+		std::cout << (a * b) << std::endl << std::endl;
+	}
+}
 int main()
 {
 	int choice = 0, key = 0;
-	while (choice != 3)
+	while (choice != 4)
 	{
 		std::cout << "\n\n1. Factorial\n"
-		<< "2. Fibonacci\n"
-		<< "3. quit\n"
-		<< std::flush;
+			<< "2. Fibonacci\n"
+			<< "3. Random Numbers\n"
+			<< "4. quit\n"
+			<< std::flush;
 		std::cin >> choice;
 		switch (choice)
 		{
 		case 1:
 			std::cout << "Enter length : " << std::flush;
 			std::cin >> key;
-			fib(key);
+			factorial(key);
 			break;
 		case 2:
 			std::cout << "Enter length : " << std::flush;
 			std::cin >> key;
-			fact(key);
+			fib(key);
 			break;
 		case 3:
+			std::cout << "Enter length of numbers : " << std::flush;
+			std::cin >> key;
+			randomNumbers(key);
+			break;
+		case 4:
 			std::cout << "Goodbye!" << std::endl;
 			break;
 		default:
