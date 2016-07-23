@@ -8,13 +8,16 @@
 * The number is stored and processed in
 * reverse in order to reduce complexity
 * of the + and * functions. Every digit
-* will be a number from 0 - 9. 
+* will be a number from 0 - 9.
 */
 #include "LinkedList.h"
 class BigInt
 {
 private:
 	LinkedList<unsigned long long> number;
+	// Helper for unary minus operator
+	BigInt &BigInt::opposite(BigInt &rhs);
+	unsigned long long complement(unsigned long long num);
 public:
 	// Default Constructor
 	BigInt();
@@ -25,11 +28,11 @@ public:
 	// Copy Constructor
 	BigInt(BigInt &num);
 	// Copy assign
-	BigInt &operator=(BigInt & num);
+	BigInt &operator=(BigInt & rhs);
 	// User defined assign
 	// Copies num into thisBigInt
-	BigInt &operator=(unsigned long long num);
-	// Adds two BigInts, returns a newBigInt 
+	BigInt &operator=(unsigned long long rhs);
+	// Adds two BigInts, returns a newBigInt
 	BigInt &operator+(BigInt &rhs);
 	// Assigns the sum of thisBigInt and
 	// rhs to thisBigInt
@@ -40,9 +43,16 @@ public:
 	// Assigns the product of thisBigInt and
 	// rhs to thisBigInt
 	BigInt &operator*=(BigInt &rhs);
+	// Returns the 9s compliment of thisBigInt
+	BigInt &operator-(BigInt &rhs);
+	// Adds one to thisBigInt
+	BigInt &operator++();
+	// Subtracts one from thisBigInt
+	BigInt &operator--();
+	bool operator<(BigInt &rhs);
 	// returns thisBigInt's itemCount
 	int getSize();
-	// Prints a BigInt in readable direction 
+	// Prints a BigInt in readable direction
 	// instead of reverse
 	friend std::ostream &operator<<(std::ostream& os, const BigInt& num);
 };
@@ -71,10 +81,10 @@ BigInt::BigInt(BigInt &num)
 }
 // Destroy thisBigInt and push each digit of num
 // into thisBigInt (reverse order)
-BigInt &BigInt::operator=(unsigned long long num)
+BigInt &BigInt::operator=(unsigned long long rhs)
 {
 	number.clear();
-	unsigned long long r = num;
+	unsigned long long r = rhs;
 	int d = 0;
 	while (r != 0)
 	{
@@ -87,16 +97,16 @@ BigInt &BigInt::operator=(unsigned long long num)
 // Uses the LinkedList.h operator= function
 // Reverse the number for ease of BigInt.h
 // function usage
-BigInt &BigInt::operator=(BigInt & num)
+BigInt &BigInt::operator=(BigInt & rhs)
 {
-	number = num.number;
+	number = rhs.number;
 	return *this;
 }
 // num is already in reverse, so print it in reverse
 // will make it readable
-std::ostream & operator<<(std::ostream & os, const BigInt & num)
+std::ostream & operator<<(std::ostream & os, const BigInt & rhs)
 {
-	num.number.printList(-1);
+	rhs.number.printList(-1);
 	return os;
 }
 // returns thisBigInt's itemCount
@@ -107,7 +117,7 @@ int BigInt::getSize()
 // if thisBigInt is empty return rhs
 // if rhs is empty return thisBigInt
 // otherwise move down both BigInts
-// taking the sum of both digits and 
+// taking the sum of both digits and
 // pushing it into newNumber and return
 /*
  * Example: 246 + 135
@@ -117,7 +127,7 @@ int BigInt::getSize()
  * c = 81
  * c = 381
  * return 183
- */ 
+ */
 BigInt &BigInt::operator+(BigInt &rhs)
 {
 	BigInt *newNumber;
@@ -176,7 +186,7 @@ BigInt & BigInt::operator+=(BigInt & rhs)
  */
 // Then it reverses the number and removes any excess
 // zeros that were added during allocation portion
-// finally reversing it for further use and returning 
+// finally reversing it for further use and returning
 // newNumber
 BigInt &BigInt::operator*(BigInt &rhs)
 {
@@ -186,17 +196,17 @@ BigInt &BigInt::operator*(BigInt &rhs)
 	unsigned long long carry;
 	int i, j;
 	for (i = 1, b_i = rhs.number.traverse(true);
-		b_i != nullptr;
-		++i, b_i = rhs.number.traverse(false))
+	        b_i != nullptr;
+	        ++i, b_i = rhs.number.traverse(false))
 	{
 		carry = 0;
 		for (j = 1, a_i = number.traverse(true);
-			a_i != nullptr;
-			++j, a_i = number.traverse(false))
+		        a_i != nullptr;
+		        ++j, a_i = number.traverse(false))
 		{
 			productPtr = product->number.getNodeAt(i + j - 1);
-			productPtr->setItem(productPtr->getItem() +\
-				carry + a_i->getItem() * b_i->getItem());
+			productPtr->setItem(productPtr->getItem() + \
+			                    carry + a_i->getItem() * b_i->getItem());
 			carry = productPtr->getItem() / 10;
 			productPtr->setItem(productPtr->getItem() % 10);
 			productPtr = productPtr->getNext();
@@ -220,6 +230,128 @@ BigInt & BigInt::operator*=(BigInt & rhs)
 {
 	*this = *this * rhs;
 	return *this;
+}
+// Table of 9s compliment
+unsigned long long BigInt::complement(unsigned long long num)
+{
+	switch (num)
+	{
+	case 0:
+		return 9;
+	case 1:
+		return 8;
+	case 2:
+		return 7;
+	case 3:
+		return 6;
+	case 4:
+		return 5;
+	case 5:
+		return 4;
+	case 6:
+		return 3;
+	case 7:
+		return 2;
+	case 8:
+		return 1;
+	case 9:
+		return 0;
+	}
+	return -1;
+}
+// Converts into the 9s compliment
+// for use in subtraction
+// Example rhs = 246 (represented as 642)
+/*
+ * newNumber = 0
+ * newNumber = empty
+ * j = 6
+ * newNumber = 3
+ * j = 4
+ * newNumber = 53
+ * j = 2
+ * newNumber = 753
+ * j = nullptr
+ */
+// If there are any 0s at the front, then remove them
+BigInt &BigInt::opposite(BigInt &rhs)
+{
+	BigInt *newNumber = new BigInt();
+	newNumber->number.pop();
+	Node<unsigned long long> *j = rhs.number.traverse(true);
+	while (j != nullptr)
+	{
+		newNumber->number.push(complement(j->getItem()));
+		j = j->getNext();
+	}
+	while (newNumber->number.getEntry(1) == 0)
+		newNumber->number.pop();
+	return *newNumber;
+}
+// Using 9s compliment, subtract rhs
+// from thisBigInt
+// Get the 9s complement of the minuend
+// Add minuend to subtrahend
+// Get the 9s complement of the sum
+// Reverse for further use
+BigInt &BigInt::operator-(BigInt &rhs)
+{
+	BigInt *newNumber = new BigInt();
+	if (*this < rhs)
+		return *newNumber;
+	BigInt temp = opposite(*this);
+	*newNumber  = temp + rhs;
+	*newNumber = opposite(*newNumber);
+	newNumber->number.reverse();
+	return *newNumber;
+}
+// Prefix increment operator
+BigInt &BigInt::operator++()
+{
+	BigInt one(1);
+	*this = *this + one;
+	return *this;
+}
+// Prefix decrement operator
+BigInt &BigInt::operator--()
+{
+	BigInt one(1);
+	*this = *this - one;
+	return *this;
+}
+// Compares size for greater or less
+// if size is equal compare digits
+// Since the numbers are held in reverse,
+// reverse so comparisons can be performed
+// at the front
+bool BigInt::operator<(BigInt &rhs)
+{
+	if (number.getLength() < rhs.number.getLength())
+		return true;
+	if (number.getLength() > rhs.number.getLength())
+		return false;
+	number.reverse();
+	rhs.number.reverse();
+	Node<unsigned long long> *i = number.traverse(true);
+	Node<unsigned long long> *j = rhs.number.traverse(true);
+	while (i)
+	{
+		if (i->getItem() > j->getItem())
+		{
+			number.reverse();
+			rhs.number.reverse();
+			return false;
+		}
+		if (i->getItem() < j->getItem())
+		{
+			number.reverse();
+			rhs.number.reverse();
+			return true;
+		}
+		i = i->getNext();
+		j = j->getNext();
+	}
+	return false;
 }
 #if 0 // #if 1 to compile as a standalone program, not a library
 void fact(int n)
@@ -288,9 +420,9 @@ int main()
 	while (choice != 3)
 	{
 		std::cout << "\n\n1. Factorial\n"
-			<< "2. Fibonacci\n"
-			<< "3. quit\n"
-			<< std::flush;
+		<< "2. Fibonacci\n"
+		<< "3. quit\n"
+		<< std::flush;
 		std::cin >> choice;
 		switch (choice)
 		{
