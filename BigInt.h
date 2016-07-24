@@ -11,13 +11,12 @@
 * will be a number from 0 - 9.
 */
 #include "LinkedList.h"
+#include<cstdlib>		// abs
 class BigInt
 {
 private:
 	LinkedList<unsigned long long> number;
-	// Helper for unary minus operator
-	BigInt &BigInt::opposite(BigInt &rhs);
-	unsigned long long complement(unsigned long long num);
+	BigInt &normalize();
 public:
 	// Default Constructor
 	BigInt();
@@ -52,7 +51,10 @@ public:
 	BigInt &operator++();
 	// Subtracts one from thisBigInt
 	BigInt &operator--();
-	bool operator<(BigInt &rhs);
+	// -1 for lhs < rhs,
+	// 0 for lhs == rhs,
+	// 1 for lhs > rhs
+	int compare(BigInt &lhs, BigInt &rhs);
 	// returns thisBigInt's itemCount
 	int getSize();
 	// Prints a BigInt in readable direction
@@ -72,7 +74,6 @@ BigInt::BigInt(unsigned long long num)
 		*this = num;
 	else
 		number.push(0);
-	number.reverse();
 }
 // Uses the LinkedList.h operator= function
 // Reverse the number for ease of BigInt.h
@@ -80,13 +81,12 @@ BigInt::BigInt(unsigned long long num)
 BigInt::BigInt(BigInt &num)
 {
 	number = num.number;
-	number.reverse();
 }
 // Destroy thisBigInt and push each digit of num
 // into thisBigInt (reverse order)
 BigInt &BigInt::operator=(unsigned long long rhs)
 {
-	number.clear();
+	number.deleteList();
 	unsigned long long r = rhs;
 	int d = 0;
 	while (r != 0)
@@ -95,6 +95,7 @@ BigInt &BigInt::operator=(unsigned long long rhs)
 		r /= 10;
 		number.push(d);
 	}
+	number.reverse();
 	return *this;
 }
 // Uses the LinkedList.h operator= function
@@ -117,62 +118,73 @@ int BigInt::getSize()
 {
 	return number.getLength();
 }
-// if thisBigInt is empty return rhs
-// if rhs is empty return thisBigInt
-// otherwise move down both BigInts
-// taking the sum of both digits and
-// pushing it into newNumber and return
-/*
-* Example: 246 + 135
-* a = 642
-* b = 531
-* c = 1
-* c = 81
-* c = 381
-* return 183
-*/
+// Create newNumber and empty it
+// traverse both numbers
+// push the sum of the digits of lhs and rhs and carry
+// to newNumber
 BigInt &BigInt::operator+(BigInt &rhs)
 {
-	BigInt *newNumber;
-	if (number.isEmpty())
-		return rhs;
-	else if (rhs.number.isEmpty())
-		return *this;
-	else
+	BigInt *sum = new BigInt();
+	sum->number.pop();
+	Node<unsigned long long> *ls = number.traverse(true);
+	Node<unsigned long long> *rs = rhs.number.traverse(true);
+	int left, right, total, digit, carry = 0;
+	while (ls || rs || carry)
 	{
-		newNumber = new BigInt();
-		newNumber->number.pop();
-		Node<unsigned long long> *ls = number.traverse(true);
-		Node<unsigned long long> *rs = rhs.number.traverse(true);
-		unsigned long long left, right, sum, digit, carry = 0;
-		// walk down both lists
-		while (ls || rs || carry)
-		{
-			if (ls == nullptr)
-				left = 0;
-			else
-				left = ls->getItem();
-			if (rs == nullptr)
-				right = 0;
-			else
-				right = rs->getItem();
-			sum = left + right + carry;
-			digit = sum % 10;
-			carry = sum / 10;
-			newNumber->number.push(digit);
-			if (ls != nullptr) ls = ls->getNext();
-			if (rs != nullptr) rs = rs->getNext();
-		}
+		if (ls == nullptr)
+			left = 0;
+		else
+			left = ls->getItem();
+		if (rs == nullptr)
+			right = 0;
+		else
+			right = rs->getItem();
+		total = left + right + carry;
+		digit = total % 10;
+		carry = total / 10;
+		sum->number.push(digit);
+		if (ls != nullptr) ls = ls->getNext();
+		if (rs != nullptr) rs = rs->getNext();
 	}
-	newNumber->number.reverse();
-	return *newNumber;
+	sum->normalize();
+	return *sum;
 }
-// Adds two BigInts and assigns it to
-// thisBigInt
-BigInt & BigInt::operator+=(BigInt & rhs)
+// Create newNumber and empty it
+// traverse both numbers
+// push the difference of the digits of lhs
+// and rhs and add the carry to newNumber
+BigInt &BigInt::operator-(BigInt &rhs)
 {
-	*this = *this + rhs;
-	return *this;
+	BigInt *diff = new BigInt();
+	int cmp = compare(*this, rhs);
+	if (cmp == 0 || cmp == -1) return *diff;
+	diff->number.pop();
+	Node<unsigned long long> *ls = number.traverse(true);
+	Node<unsigned long long> *rs = rhs.number.traverse(true);
+	int left, right, sum, carry = 0;
+	while (ls || rs || carry)
+	{
+		if (ls == nullptr)
+			left = 0;
+		else
+			left = ls->getItem();
+		if (rs == nullptr)
+			right = 0;
+		else
+			right = rs->getItem();
+		sum = left - right + carry;
+		carry = 0;
+		if (sum < 0)
+		{
+			sum += 10;
+			carry = -1;
+		}
+		diff->number.push(sum % 10);
+		if (ls != nullptr) ls = ls->getNext();
+		if (rs != nullptr) rs = rs->getNext();
+	}
+	diff->normalize();
+	return *diff;
 }
 // Performs multiplication using this method:
 /*
@@ -218,14 +230,15 @@ BigInt &BigInt::operator*(BigInt &rhs)
 		productPtr->setItem(productPtr->getItem() + carry);
 	}
 	product->number.reverse();
-	productPtr = product->number.traverse(true);
-	while (productPtr->getItem() == 0)
-	{
-		product->number.pop();
-		productPtr = product->number.traverse(true);
-	}
-	product->number.reverse();
+	product->normalize();
 	return *product;
+}
+// Adds two BigInts and assigns it to
+// thisBigInt
+BigInt & BigInt::operator+=(BigInt & rhs)
+{
+	*this = *this + rhs;
+	return *this;
 }
 // Assigns the product of thisBigInt and rhs
 // to thisBigInt
@@ -233,80 +246,6 @@ BigInt & BigInt::operator*=(BigInt & rhs)
 {
 	*this = *this * rhs;
 	return *this;
-}
-// Table of 9s compliment
-unsigned long long BigInt::complement(unsigned long long num)
-{
-	switch (num)
-	{
-	case 0:
-		return 9;
-	case 1:
-		return 8;
-	case 2:
-		return 7;
-	case 3:
-		return 6;
-	case 4:
-		return 5;
-	case 5:
-		return 4;
-	case 6:
-		return 3;
-	case 7:
-		return 2;
-	case 8:
-		return 1;
-	case 9:
-		return 0;
-	}
-	return -1;
-}
-// Converts into the 9s compliment
-// for use in subtraction
-// Example rhs = 246 (represented as 642)
-/*
-* newNumber = 0
-* newNumber = empty
-* j = 6
-* newNumber = 3
-* j = 4
-* newNumber = 53
-* j = 2
-* newNumber = 753
-* j = nullptr
-*/
-// If there are any 0s at the front, then remove them
-BigInt &BigInt::opposite(BigInt &rhs)
-{
-	BigInt *newNumber = new BigInt();
-	newNumber->number.pop();
-	Node<unsigned long long> *j = rhs.number.traverse(true);
-	while (j != nullptr)
-	{
-		newNumber->number.push(complement(j->getItem()));
-		j = j->getNext();
-	}
-	while (newNumber->number.getEntry(1) == 0)
-		newNumber->number.pop();
-	return *newNumber;
-}
-// Using 9s compliment, subtract rhs
-// from thisBigInt
-// Get the 9s complement of the minuend
-// Add minuend to subtrahend
-// Get the 9s complement of the sum
-// Reverse for further use
-BigInt &BigInt::operator-(BigInt &rhs)
-{
-	BigInt *newNumber = new BigInt();
-	if (*this < rhs)
-		return *newNumber;
-	BigInt temp = opposite(*this);
-	*newNumber = temp + rhs;
-	*newNumber = opposite(*newNumber);
-	newNumber->number.reverse();
-	return *newNumber;
 }
 // Assigns the difference of thisBigInt
 // and rhs to thisBigInt
@@ -334,34 +273,39 @@ BigInt &BigInt::operator--()
 // Since the numbers are held in reverse,
 // reverse so comparisons can be performed
 // at the front
-bool BigInt::operator<(BigInt &rhs)
+int BigInt::compare(BigInt &lhs, BigInt &rhs)
 {
 	if (number.getLength() < rhs.number.getLength())
-		return true;
+		return -1;
 	if (number.getLength() > rhs.number.getLength())
-		return false;
+		return 1;
 	number.reverse();
 	rhs.number.reverse();
 	Node<unsigned long long> *i = number.traverse(true);
 	Node<unsigned long long> *j = rhs.number.traverse(true);
-	while (i)
+	int cmp = 0;
+	while (i && cmp == 0)
 	{
-		if (i->getItem() > j->getItem())
-		{
-			number.reverse();
-			rhs.number.reverse();
-			return false;
-		}
-		if (i->getItem() < j->getItem())
-		{
-			number.reverse();
-			rhs.number.reverse();
-			return true;
-		}
+		cmp = ((i->getItem() > j->getItem()) ? (1) : \
+			(((i->getItem() < j->getItem())) ? (-1) : (0)));
 		i = i->getNext();
 		j = j->getNext();
 	}
-	return false;
+	number.reverse();
+	rhs.number.reverse();
+	return cmp;
+}
+BigInt &BigInt::normalize()
+{
+	Node<unsigned long long> *productPtr = number.traverse(true);
+	while (number.getLength() > 1 &&
+		this->number.getEntry(1) == 0)
+	{
+		number.pop();
+		productPtr = number.traverse(true);
+	}
+	number.reverse();
+	return *this;
 }
 #if 0 // #if 1 to compile as a standalone program, not a library
 #include <stdlib.h>     /* srand, rand */
